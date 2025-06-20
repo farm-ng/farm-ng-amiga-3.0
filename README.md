@@ -2,7 +2,6 @@
 # Local development
 
 Create Python env:
-    cd autumn/adk/
     python3 -m venv venv
     source venv/bin/activate
 
