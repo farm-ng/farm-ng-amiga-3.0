@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+// Requests to remote control the robot
+message TeleopRequest {
+	oneof kind {
+		TeleopActivateRequest activate = 1;
+		TeleopDeactivateRequest deactivate = 2;
+		TeleopCommandRequest command = 3;
+	}
+}
+
+/// Activates teleoperation. This mutes commands from navigation requests, without
+/// stopping or interrupting those navigation requests. Thus teleop can be used to "fix" currently
+/// running navigation requests.
+message TeleopActivateRequest {
+}
+
+/// Deactivates teleoperation. This unmutes commands from navigation requests resuming their
+/// behavior.
+message TeleopDeactivateRequest {
+}
+
+/// Sends commands to move the robot via teleoperation. Commands must be sent periodially
+/// otherwise the robot will stop. Commands intepretation varies based on the currently active
+/// teleop controller.
+///
+/// Amiga V6: The vertical axis controls the linear velocity of the robot while the horizontal axis
+///           controls its angular velocity. Commands are mapped via a non-linear curve.
+message TeleopCommandRequest {
+	bool dead_man_switch = 1;
+	double h_axis = 2;
+	double v_axis = 3;
+}

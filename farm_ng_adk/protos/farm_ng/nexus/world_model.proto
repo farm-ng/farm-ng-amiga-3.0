@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+import "farm_ng/nexus/fundamentals.proto";
+
+message WorldModelRequest {
+  oneof kind {
+    ResetAnchor reset_anchor = 1;
+    SetZones set_zones = 2;
+    DeleteZones delete_zones = 3;
+    GetZone get_zone = 4;
+  }
+}
+
+message WorldModelFeedback {
+  oneof kind { Zone zone = 1; }
+}
+
+message ResetAnchor {}
+
+message SetZones {
+  repeated Zone zones = 1;
+}
+
+message DeleteZones {
+  bool delete_all = 1;
+}
+
+message GetZone {
+  string id = 1;
+}
+
+message Zone {
+  string id = 1;
+  GpsFence fence = 2;
+  FieldFurrowLayout field_furrow_layout = 3;
+}
+
+message GpsFence {
+  repeated LonLat polygon = 2;
+}
+
+message FieldFurrowLayout {
+  double row_width = 1;
+  double row_orientation = 2;
+}

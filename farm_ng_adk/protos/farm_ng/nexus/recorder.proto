@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+import "farm_ng/nexus/fundamentals.proto";
+
+message RecorderRequest {
+	oneof kind {
+		RecorderStartRequest start = 1;
+		RecorderStopRequest stop = 2;
+		RecorderAnnotationRequest annotate = 3;
+	}
+}
+
+message RecorderStartRequest {
+	string id = 1;
+	repeated string topics = 2;
+}
+
+message RecorderStopRequest {
+	string id = 1;
+}
+
+message RecorderAnnotationRequest {
+	Timestamp acqtime = 1;
+	string context = 2;
+  	map<string, Value> items = 3;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+message TweakRequest {
+  oneof kind {
+  	// If set to true robot will disable all safety fence checks. It will always act as if it is
+  	// inside a safety fence even if no fences were provided, or if it is outside of provided
+  	// safety fences.
+    bool safety_fence_check = 1;
+
+    // If set to true robot will stop using perception to avoid obstacles. It will always act as
+    // if no obstacles where detected.
+    bool obstacle_avoidance = 2;
+  }
+}

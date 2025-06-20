@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+// Same definition as "google/protobuf/timestamp.proto"
+// Redefined to avoid more external dependencies which don't support serde.
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
+
+message Stamp {
+  Timestamp acqtime = 1;
+  Timestamp pubtime = 2;
+}
+
+message LonLat {
+  double longitude = 1; // East/West [deg]
+  double latitude = 2;  // North/South [deg]
+}
+
+message LonLatAlt {
+  double longitude = 1; // East/West [deg]
+  double latitude = 2;  // North/South [deg]
+  double altitude = 3;  // Distance to sea level [meters]
+}
+
+message RepeatedLonLat { repeated LonLat waypoints = 1; }
+
+message RelPosENU {
+  double delta_east = 1;  // East position offset relative to anchor [meters]
+  double delta_north = 2; // North position offset relative to anchor [meters]
+  double delta_up = 3;    // Up position offset relative to anchor [meters]
+}
+
+/// East/North position [m] relative to GPS anchor with heading relative to East
+/// [rad]
+message RelPose2 {
+  double east = 1;
+  double north = 2;
+  double heading = 3;
+}
+
+message Value {
+  oneof kind {
+    string text = 1;
+    int64 int = 2;
+    bool flag = 3;
+    double float = 4;
+  }
+}
+
+message AutoModeRequest { bool enabled = 1; };
+
+message EStopRequest {};
+
+message ControlSignalRequest {
+  oneof kind {
+    AutoModeRequest auto_mode = 1;
+    EStopRequest e_stop = 2;
+  }
+}

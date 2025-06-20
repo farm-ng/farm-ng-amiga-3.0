@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+import "farm_ng/nexus/amiga_state.proto";
+import "farm_ng/nexus/fundamentals.proto";
+import "farm_ng/nexus/implement.proto";
+import "farm_ng/nexus/job.proto";
+import "farm_ng/nexus/navigation.proto";
+import "farm_ng/nexus/recorder.proto";
+import "farm_ng/nexus/teleop.proto";
+import "farm_ng/nexus/tweak.proto";
+import "farm_ng/nexus/video_streaming.proto";
+import "farm_ng/nexus/world_model.proto";
+
+message Request {
+  oneof kind {
+    WorldModelRequest world_model = 1;
+    NavigationRequest navigation = 2;
+    ImplementRequest implement = 3;
+    JobRequest job = 4;
+    VideoStreamRequest video_stream = 5;
+    RecorderRequest recorder = 6;
+    TeleopRequest teleop = 7;
+    TweakRequest tweak = 8;
+    ControlSignalRequest control_signal = 9;
+  }
+}
+
+message Reply { uint64 id = 1; }
+
+message Feedback {
+  uint64 id = 1;
+  Stamp stamp = 2;
+  oneof kind {
+    AmigaState amiga_state = 3;
+    WorldModelFeedback world_model = 4;
+    NavigationFeedback navigation = 5;
+    ImplementFeedback implement = 6;
+    JobFeedback job = 7;
+    VideoStreamFeedback video_stream = 8;
+  }
+}
+
+message Stream {
+  oneof kind { VideoStreamFrame video = 1; }
+}

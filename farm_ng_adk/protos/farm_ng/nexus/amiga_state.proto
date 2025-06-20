@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+import "farm_ng/nexus/fundamentals.proto";
+
+message AmigaState {
+  Capabilities capabilities = 1;
+  AmigaBaseState amiga_base_state = 2;
+  MotionEstimation motion_estimation = 3;
+  GlobalPose global_pose = 4;
+  LonLatAlt gps_anchor = 5;
+  LonLatAlt base_station = 6;
+  ZoneReport zone_report = 7;
+
+  // The path which autumn planned based on navigation requests. Waypoints are
+  // relative to the GPS anchor.
+  repeated RelPose2 requested_path = 8;
+
+  // Poses along the trajectory autumn is currently following. The trajectory is
+  // computed based on the requested path and other factors like obstacles.
+  // Waypoints are relative to the GPS anchor.
+  repeated RelPose2 followed_path = 9;
+  JetsonResourceUsage jetson_resource_usage = 10;
+  optional string firmware_version = 11;
+}
+
+message Capabilities {
+  bool is_initialized = 1;
+  bool can_engage = 2;
+  int32 gps_correction_kind = 3;
+  int32 carr_soln_kind = 4;
+  bool wifi_connected = 5;
+  optional string ntrip_server = 6;
+  optional double gps_horizontal_accuracy = 7;
+  optional double gps_vertical_accuracy = 8;
+}
+
+message AmigaBaseState {
+  bool is_stopped = 3;
+  bool brakes_engaged = 4;
+  bool autonomy_engaged = 5;
+  double battery_percent = 6;
+}
+
+message MotionEstimation {
+  double linear_velocity = 1;  // Forward velocity of robot [m/s]
+  double angular_velocity = 2; // Angular velocity of robot [rad/s]
+  double pitch = 4; // Estimated pitch of robot (rotation around y axis) [rad]
+  double roll = 5;  // Estimated roll of robot (rotation around x axis) [rad]
+}
+
+message GlobalPose {
+  LonLatAlt position = 1; // Current position of the robot
+  double heading = 2;     // Current heading of the robot relative to East [rad]
+  RelPosENU rel_pos = 4;  // Current robot position relative to anchor [m]
+}
+
+message ZoneReport {
+  bool inside_safety_zone = 1;
+  repeated string current_zones = 2;
+}
+
+message JetsonResourceUsage {
+  double cpu_usage = 1;
+  double memory_usage = 2;
+}

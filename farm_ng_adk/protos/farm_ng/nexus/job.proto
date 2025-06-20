@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+import "farm_ng/nexus/navigation.proto";
+import "farm_ng/nexus/implement.proto";
+
+message JobRequest {
+  oneof kind {
+    StartJobRequest start_job = 1;
+    UpdateJobRequest update_job = 2;
+    StopJobRequest stop_job = 3;
+  }
+}
+
+message StartJobRequest {
+  NavigationRequest navigation = 1;
+  string engaged_zone_id = 2;
+  string transition_zone_id = 3;
+  ImplementState engaged_implement_state = 4;
+  ImplementState disengaged_implement_state = 5;
+  ImplementState final_implement_state = 6;
+}
+
+message UpdateJobRequest {
+  ImplementState engaged_implement_state = 1;
+  ImplementState disengaged_implement_state = 2;
+  ImplementState final_implement_state = 3;
+}
+
+message StopJobRequest {}
+
+message JobFeedback {
+  NavigationFeedback navigation = 1;
+  ImplementFeedback implement = 2;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package farm_ng.hal;
+
+import "farm_ng/nexus/fundamentals.proto";
+
+message Imu {
+    Vec3 gyro = 1;
+    Vec3 accel = 2;
+}
+
+message Vec3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}

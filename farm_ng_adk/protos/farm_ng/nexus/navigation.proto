@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package farm_ng.nexus;
+
+import "farm_ng/nexus/fundamentals.proto";
+
+message NavigationRequest {
+  oneof kind {
+    ResetRequest reset = 1;
+    StopRequest stop = 2;
+    FurrowGuidanceRequest furrow_guidance = 3;
+    TurnAroundRequest turn_around = 4;
+    FollowRouteRequest follow_route = 5;
+    GoToRequest go_to = 6;
+    FollowFigureRequest follow_figure = 7;
+    FieldTraversalRequest field_traversal = 8;
+  }
+}
+
+message ResetRequest {}
+
+message StopRequest {}
+
+message FollowRouteRequest {
+    oneof kind {
+      RepeatedLonLat lon_lat_route = 1;
+      string route_path = 2;
+    }
+    optional double speed = 3;
+    optional string plan_id = 4;
+}
+
+message FurrowGuidanceRequest {}
+
+message TurnAroundRequest {
+  TurnAroundReferenceFrame reference_frame = 1;
+  double radius = 2;
+  DirectionKind direction = 3;
+  double min_backward_distance = 4;
+  double pre_forward = 5;
+  double post_forward = 6;
+  int32 rows_to_skip = 7;
+  double speed = 8;
+  TurnAroundManeuverKind turn_around_maneuver = 9;
+
+}
+
+enum TurnAroundManeuverKind {
+  ArcTravelArc = 0;
+  ArcStraightArc = 1;
+  Sharp = 2;
+  SharpBothDirections = 3;
+  SharpBox = 4;
+}
+
+enum DirectionKind {
+  DIRECTION_KIND_COUNTER_CLOCKWISE = 0;
+  DIRECTION_KIND_CLOCKWISE = 1;
+}
+
+enum TurnAroundReferenceFrame {
+  ODOMETRY = 0;
+  GLOBAL = 1;
+}
+
+message GoToRequest {
+  LonLat waypoint = 1;
+}
+
+message FollowFigureRequest {
+  uint32 pose_count = 1;
+  oneof kind {
+    LineFigure line = 2;
+    CircleFigure circle = 3;
+    EightFigure eight = 4;
+  }
+}
+
+message LineFigure {
+  double dx = 1;
+  double dy = 2;
+  double heading = 3;
+}
+
+message CircleFigure {
+  double radius = 1;
+  DirectionKind direction = 2;
+}
+
+message EightFigure {
+  double radius = 1;
+}
+
+message FieldTraversalRequest {
+  string field_zone_id = 1;
+  DirectionKind first_turn_direction = 2;
+  uint32 number_of_rows = 3;
+  uint32 number_of_rows_to_skip = 4;
+  float max_distance_from_field = 5;
+  uint32 number_of_rows_to_return = 6;
+}
+
+message NavigationFeedback {
+  NavigationMode mode = 1;
+  NavigationStatus status = 2;
+  repeated NavigationError errors = 3;
+  oneof aux { FollowRouteFeedback repeat_route = 5; }
+}
+
+enum NavigationMode {
+  NAVIGATION_MODE_UNSPECIFIED = 0;
+  NAVIGATION_MODE_IDLE = 1;
+  NAVIGATION_MODE_FURROW_GUIDANCE = 2;
+  NAVIGATION_MODE_TURN_AROUND = 3;
+  NAVIGATION_MODE_REPEAT_ROUTE = 4;
+  NAVIGATION_MODE_GO_TO = 5;
+  NAVIGATION_MODE_FOLLOW_FIGURE = 6;
+  NAVIGATION_MODE_FIELD_TRAVERSAL = 7;
+}
+
+enum NavigationStatus {
+  NAVIGATION_STATUS_UNSPECIFIED = 0;
+  NAVIGATION_STATUS_ACTIVE = 1;
+  NAVIGATION_STATUS_PAUSED = 2;
+  NAVIGATION_STATUS_COMPLETE = 3;
+}
+
+message NavigationError {
+  NavigationErrorKind kind = 1;
+  string message = 2;
+}
+
+enum NavigationErrorKind {
+  NAVIGATION_ERROR_KIND_UNSPECIFIED = 0;
+  NAVIGATION_ERROR_KIND_INVALID_OPERATION = 1;
+  NAVIGATION_ERROR_KIND_INTERNAL_ERROR = 2;
+  NAVIGATION_ERROR_KIND_NO_PROGESS_TIMEOUT = 3;
+  NAVIGATION_ERROR_KIND_AUTO_DISENGAGE_TIMEOUT = 4;
+}
+
+message FollowRouteFeedback {
+  uint32 next_waypoint_index = 1;
+
+  // Next N "near future" waypoints (~10 m)
+  RepeatedLonLat plan = 2;
+  optional string plan_id = 3;
+}
