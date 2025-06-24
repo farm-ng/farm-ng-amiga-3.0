@@ -12,9 +12,10 @@ VELOCITY_INCREMENT = 0.1
 class Teleop:
     def __init__(self, amiga: Amiga):
         self.amiga = amiga
-        self.v_axis: float
-        self.h_axis: float
+        self.v_axis: float = 0.0  # Initialize values
+        self.h_axis: float = 0.0  # Initialize values
         self.lock = asyncio.Lock()
+        self.running = True
         self.task: asyncio.Task = asyncio.create_task(self.run())
 
     async def activate(self):
@@ -29,15 +30,16 @@ class Teleop:
             self.v_axis = v_axis
 
     async def run(self):
-        while True:
+        while self.running:
             async with self.lock:
                 v = self.v_axis
                 h = self.h_axis
             if v != 0.0 or h != 0.0:
                 await self.amiga.teleop_command(h_axis=h, v_axis=v)
-            asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)  # Fixed: was missing await
 
     async def shutdown(self):
+        self.running = False  # Stop the run loop
         await self.deactivate()
         self.task.cancel()
         try:
@@ -94,7 +96,10 @@ async def main(address: str):
                 await teleop_handler.update_command(h_axis=current_h, v_axis=current_v)
                 await asyncio.sleep(update_interval)
 
-        await teleop_handler.deactivate()
+        # Send stop command before deactivating
+        await teleop_handler.update_command(h_axis=0.0, v_axis=0.0)
+        await asyncio.sleep(0.1)  # Give time for the stop command to be sent
+
         logging.info("Teleop deactivated.")
 
     except KeyboardInterrupt:
@@ -106,7 +111,6 @@ async def main(address: str):
     finally:
         # Stop the running teleop task
         await teleop_handler.shutdown()
-
         logging.info("Teleop deactivated.")
 
 
