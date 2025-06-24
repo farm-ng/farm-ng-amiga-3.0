@@ -4,12 +4,41 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from farm_ng.helpers import load_track_from_json
 from farm_ng.nexus_client import NexusClient
-from farm_ng.nexus import Request, RecorderRequest, RecorderStartRequest, RecorderStopRequest, \
-    Value, RecorderAnnotationRequest, Timestamp, Stream, Feedback, VideoStreamRequest, \
-    VideoEncoderSettings, VideoStreamResolution, TeleopRequest, TeleopActivateRequest, TeleopDeactivateRequest, TeleopCommandRequest, \
-    NavigationRequest, StopRequest, TurnAroundRequest, TurnAroundManeuverKind, TurnAroundReferenceFrame, DirectionKind, \
-    FollowRouteRequest, ImplementRequest, ImplementState, ToolRequest, ToolState, EnabledKind, PolarToolState, PolarToolStateKind, \
-    RotaryToolState
+from farm_ng.nodo_client import CameraSettings, NodoNNGClient as NodoClient
+from farm_ng.nexus import (
+    Request,
+    RecorderRequest,
+    RecorderStartRequest,
+    RecorderStopRequest,
+    Value,
+    RecorderAnnotationRequest,
+    Timestamp,
+    Stream,
+    Feedback,
+    VideoStreamRequest,
+    VideoEncoderSettings,
+    VideoStreamResolution,
+    TeleopRequest,
+    TeleopActivateRequest,
+    TeleopDeactivateRequest,
+    TeleopCommandRequest,
+    NavigationRequest,
+    StopRequest,
+    TurnAroundRequest,
+    TurnAroundManeuverKind,
+    TurnAroundReferenceFrame,
+    DirectionKind,
+    FollowRouteRequest,
+    ImplementRequest,
+    ImplementState,
+    ToolRequest,
+    ToolState,
+    EnabledKind,
+    PolarToolState,
+    PolarToolStateKind,
+    RotaryToolState,
+)
+
 
 class Amiga:
     """
@@ -35,6 +64,7 @@ class Amiga:
             feedback_address=f"tcp://{address}:54389",
             stream_address=f"tcp://{address}:54390",
         )
+        self.nodo_client = NodoClient(request_address=f"tcp://{address}:54398")
 
     async def activate_teleop(self):
         """
@@ -45,9 +75,7 @@ class Amiga:
             await nexus.activate_teleop()
             ```
         """
-        request = Request(
-            teleop=TeleopRequest(
-                activate=TeleopActivateRequest()))
+        request = Request(teleop=TeleopRequest(activate=TeleopActivateRequest()))
         await self.client.request(request)
 
     async def deactivate_teleop(self):
@@ -59,12 +87,12 @@ class Amiga:
             await nexus.deactivate_teleop()
             ```
         """
-        request = Request(
-            teleop=TeleopRequest(
-                deactivate=TeleopDeactivateRequest()))
+        request = Request(teleop=TeleopRequest(deactivate=TeleopDeactivateRequest()))
         await self.client.request(request)
 
-    async def teleop_command(self, h_axis: float, v_axis: float, dead_man_switch: bool = True):
+    async def teleop_command(
+        self, h_axis: float, v_axis: float, dead_man_switch: bool = True
+    ):
         """
         Sends a teleoperation command to control the robot's movement.
 
@@ -81,12 +109,12 @@ class Amiga:
         request = Request(
             teleop=TeleopRequest(
                 command=TeleopCommandRequest(
-                    h_axis=h_axis,
-                    v_axis=v_axis,
-                    dead_man_switch=dead_man_switch
-                )))
+                    h_axis=h_axis, v_axis=v_axis, dead_man_switch=dead_man_switch
+                )
+            )
+        )
         await self.client.request(request)
-    
+
     async def start_recording(self, id: str, topics: list[str]):
         """
         Sends a request to start a recording session on the Amiga.
@@ -101,11 +129,8 @@ class Amiga:
             ```
         """
         request = Request(
-            recorder=RecorderRequest(
-                start=RecorderStartRequest(
-                    id=id,
-                    topics=topics
-                )))
+            recorder=RecorderRequest(start=RecorderStartRequest(id=id, topics=topics))
+        )
         await self.client.request(request)
 
     async def stop_recording(self, id: str):
@@ -124,7 +149,9 @@ class Amiga:
             recorder=RecorderRequest(
                 stop=RecorderStopRequest(
                     id=id,
-                )))
+                )
+            )
+        )
         await self.client.request(request)
 
     async def record_annotations(self, context: Optional[str], items: Dict[str, Any]):
@@ -166,9 +193,7 @@ class Amiga:
         request = Request(
             recorder=RecorderRequest(
                 annotate=RecorderAnnotationRequest(
-                    acqtime=get_acqtime_now(),
-                    context=context,
-                    items=proto_items
+                    acqtime=get_acqtime_now(), context=context, items=proto_items
                 )
             )
         )
@@ -215,7 +240,9 @@ class Amiga:
         try:
             resolution_enum = resolution_map[resolution]
         except KeyError:
-            raise ValueError(f"Invalid resolution '{resolution}'. Must be one of: {list(resolution_map.keys())}")
+            raise ValueError(
+                f"Invalid resolution '{resolution}'. Must be one of: {list(resolution_map.keys())}"
+            )
 
         request = Request(
             video_stream=VideoStreamRequest(
@@ -223,20 +250,18 @@ class Amiga:
                 settings=VideoEncoderSettings(
                     resolution=resolution_enum,
                     bitrate=0,
-                )
+                ),
             )
         )
 
         await self.client.request(request)
 
     async def disable_video_stream(self):
-        """Disables video streaming
-        """
+        """Disables video streaming"""
         request = Request(video_stream=VideoStreamRequest())
 
         await self.client.request(request)
-        
-        
+
     async def square_track(self, direction: str):
         """
         Sends a request to square the track in a specified direction.
@@ -251,7 +276,7 @@ class Amiga:
         """
         if direction not in ["left", "right"]:
             raise ValueError("Direction must be 'left' or 'right'.")
-        
+
         request = Request(
             navigation=NavigationRequest(
                 turn_around=TurnAroundRequest(
@@ -260,23 +285,27 @@ class Amiga:
                     pre_forward=5.00,
                     post_forward=5.00,
                     rows_to_skip=0,
-                    direction=DirectionKind.DIRECTION_KIND_COUNTER_CLOCKWISE if direction == "left" else DirectionKind.DIRECTION_KIND_CLOCKWISE,
+                    direction=(
+                        DirectionKind.DIRECTION_KIND_COUNTER_CLOCKWISE
+                        if direction == "left"
+                        else DirectionKind.DIRECTION_KIND_CLOCKWISE
+                    ),
                     min_backward_distance=1.0,
                     speed=0.65,
                     turn_around_maneuver=TurnAroundManeuverKind.SharpBox,
                 )
             )
         )
-        
+
         await self.client.request(request)
-        
+
     async def repeat_route(self, path: str):
         """Sends a request to repeat a specific route.
 
         Args:
             path (str): The path to the route to be repeated.
         """
-        
+
         request = Request(
             navigation=NavigationRequest(
                 follow_route=FollowRouteRequest(
@@ -284,24 +313,24 @@ class Amiga:
                 )
             )
         )
-        
+
         await self.client.request(request)
-        
+
     async def repeat_route_from_lon_lats(self, json_path: str):
         """
         Sends a request to repeat a route stored as a list of longitude and latitude coordinates.
-        
+
         Args:
             json_path (str): The path to the JSON file containing the route data.
-        
+
         Example:
             ```python
             await nexus.repeat_route_from_lon_lats("path/to/route.json")
             ```
         """
-        
+
         track = load_track_from_json(json_path)
-        
+
         request = Request(
             navigation=NavigationRequest(
                 follow_route=FollowRouteRequest(
@@ -309,23 +338,19 @@ class Amiga:
                 )
             )
         )
-        
+
         await self.client.request(request)
-        
+
     async def pause_route(self):
         """Sends a request to pause the current route.
 
         This will stop the robot's movement and hold its position.
         """
-        
-        request = Request(
-            navigation=NavigationRequest(
-                stop=StopRequest()
-            )
-        )
-        
+
+        request = Request(navigation=NavigationRequest(stop=StopRequest()))
+
         await self.client.request(request)
-                    
+
     async def activate_tool(self, tool_id: int, tool_type: str, setpoint: float):
         """
         Sends a request to activate a tool on the Amiga.\n
@@ -334,53 +359,52 @@ class Amiga:
             tool_type (str): The type of the tool, either "hbridge" or "pto".\n
             setpoint (float): The setpoint for the tool. For "hbridge", this is the timeout in seconds.
             For "pto", this is the rpm  - ***In both cases the sign of the value is used to dictate direction of actuation***
-            
+
             Example:
                 Move H-Bridge with ID 1 forward with a timeout of 5 seconds:
                 ```python
                 await nexus.activate_tool(1, "hbridge", 5.0)
                 ```
-                
+
                 Move PTO with ID 9 backward with at 100 rpm:
                 ```python
                 await nexus.activate_tool(9, "pto", -100.0)
         """
-        
+
         tool_state = None
         if tool_type not in ["hbridge", "pto"]:
-            raise ValueError(f"Invalid tool type '{tool_type}'. Must be either 'hbridge' or 'pto'.")
-        
+            raise ValueError(
+                f"Invalid tool type '{tool_type}'. Must be either 'hbridge' or 'pto'."
+            )
+
         if tool_type == "hbridge":
             tool_state = ToolState(
                 enabled_kind=EnabledKind.IMPLEMENT_ENABLED,
                 polar=PolarToolState(
-                    kind=PolarToolStateKind.A if setpoint >=0 else PolarToolStateKind.B,
+                    kind=(
+                        PolarToolStateKind.A if setpoint >= 0 else PolarToolStateKind.B
+                    ),
                     timeout=abs(setpoint),
-                )
+                ),
             )
         elif tool_type == "pto":
             tool_state = ToolState(
                 enabled_kind=EnabledKind.IMPLEMENT_ENABLED,
                 rotary=RotaryToolState(
                     angular_velocity=setpoint,
-                )
+                ),
             )
-        
+
         request = Request(
             implement=ImplementRequest(
                 command=ImplementState(
-                    tools=[
-                        ToolRequest(
-                            id=tool_id,
-                            target_state=tool_state
-                        )
-                    ]
+                    tools=[ToolRequest(id=tool_id, target_state=tool_state)]
                 )
             )
         )
-        
+
         await self.client.request(request)
-    
+
     async def deactivate_tool(self, tool_id: int, tool_type: str):
         """
         Sends a request to deactivate a tool on the Amiga.
@@ -388,27 +412,29 @@ class Amiga:
             tool_id (int): The ID of the tool to deactivate.
             tool_type (str): The type of the tool, either "hbridge" or "pto".
         """
-        
+
         tool_state = None
         if tool_type not in ["hbridge", "pto"]:
-            raise ValueError(f"Invalid tool type '{tool_type}'. Must be either 'hbridge' or 'pto'.")
-        
+            raise ValueError(
+                f"Invalid tool type '{tool_type}'. Must be either 'hbridge' or 'pto'."
+            )
+
         if tool_type == "hbridge":
             tool_state = ToolState(
                 enabled_kind=EnabledKind.IMPLEMENT_DISABLED,
                 polar=PolarToolState(
                     kind=PolarToolStateKind.UNSPECIFIED_POLAR_TOOL_STATE,
                     timeout=0.0,
-                )
+                ),
             )
         elif tool_type == "pto":
             tool_state = ToolState(
                 enabled_kind=EnabledKind.IMPLEMENT_DISABLED,
                 rotary=RotaryToolState(
                     angular_velocity=0.0,
-                )
+                ),
             )
-        
+
         request = Request(
             implement=ImplementRequest(
                 command=ImplementState(
@@ -421,58 +447,107 @@ class Amiga:
                 )
             )
         )
-        
+
         await self.client.request(request)
-    
+
     async def stop_all_tools(self, tool_ids: list[int]):
         tool_requests = []
-        
+
         for tool_id in tool_ids:
             if not isinstance(tool_id, int) or tool_id < 0:
                 continue
-            
+
             tool_state = None
-            if tool_id >=0 and tool_id < 10:
+            if tool_id >= 0 and tool_id < 10:
                 tool_state = ToolState(
                     enabled_kind=EnabledKind.IMPLEMENT_DISABLED,
                     polar=PolarToolState(
                         kind=PolarToolStateKind.UNSPECIFIED_POLAR_TOOL_STATE,
                         timeout=0.0,
-                    )
+                    ),
                 )
-                
-            elif tool_id >=10 and tool_id < 20:
+
+            elif tool_id >= 10 and tool_id < 20:
                 tool_state = ToolState(
                     enabled_kind=EnabledKind.IMPLEMENT_DISABLED,
                     rotary=RotaryToolState(
                         angular_velocity=0.0,
-                    )
+                    ),
                 )
-                
+
             else:
                 continue
-            
-            tool_request = ToolRequest(
-                id=tool_id,
-                target_state=tool_state
-            )
-            
+
+            tool_request = ToolRequest(id=tool_id, target_state=tool_state)
+
             tool_requests.append(tool_request)
-                
-        
+
         request = Request(
-            implement=ImplementRequest(
-                command=ImplementState(
-                    tools=tool_requests
-                )
-            )
+            implement=ImplementRequest(command=ImplementState(tools=tool_requests))
         )
-        
+
         await self.client.request(request)
-        
+
+    async def update_camera_settings(self, camera_name: str, settings: Dict[str, Any]):
+        """
+        Updates the camera settings for a specific camera.
+
+        Args:
+            camera_name (str): The name of the camera to update ('oak0' or 'oak1').
+            settings (Dict[str, Any]): A dictionary containing the camera settings to update.
+
+        Valid settings keys include:
+            - "auto_exposure": bool, enable or disable auto exposure
+            - "auto_focus": bool, enable or disable auto focus
+            - "auto_white_balance": bool, enable or disable auto white balance
+            - "exposure_time_us": int, exposure time in microseconds (None for auto exposure)
+                *Must be between 20 and 33,000; auto_exposure must be False*
+            - "iso_sensitivity": int, ISO sensitivity (None for auto exposure)
+                *Must be between 100 and 1600; auto_exposure must be False*
+            - "lens_position": int, lens position (None for auto focus)
+                *Must be between 1 and 255; auto_focus must be False*
+            - "color_temperature_kelvins": int, color temperature in kelvins (None for auto white balance)
+
+        Example:
+            ```python
+            nexus.update_camera_settings(camera_name="oak0", settings={
+                "auto_exposure": True,
+                "auto_focus": False,
+                "exposure_time_us": None,
+                "iso_sensitivity": None,
+                "lens_position": 128
+            })
+            ```
+        """
+        if camera_name not in ["oak0", "oak1"]:
+            raise ValueError("Camera name must be 'oak0' or 'oak1'.")
+
+        new_settings = CameraSettings(camera_name=camera_name)
+
+        new_settings.enable_auto_exposure = settings.get("auto_exposure", None)
+        new_settings.enable_auto_focus = settings.get("auto_focus", None)
+        new_settings.enable_auto_white_balance = settings.get(
+            "auto_white_balance", None
+        )
+
+        new_settings.exposure_time_us = settings.get("exposure_time_us", None)
+        new_settings.iso_sensitivity = settings.get("iso_sensitivity", None)
+        new_settings.lens_position = settings.get("lens_position", None)
+        new_settings.color_temperature_kelvins = settings.get(
+            "color_temperature_kelvins", None
+        )
+
+        success = await self.nodo_client.update_camera_settings(new_settings)
+
+        if not success:
+            raise RuntimeError(
+                f"Failed to update camera settings for {camera_name}. Please check the provided settings."
+            )
 
     @asynccontextmanager
-    async def feedback_sub(self, callback: Optional[Callable[[Feedback], Awaitable[None]]]):
+    async def feedback_sub(
+        self, callback: Optional[Callable[[Feedback], Awaitable[None]]]
+    ):
         async with self.client.feedback_sub(callback) as sub:
             yield sub
 
@@ -480,6 +555,7 @@ class Amiga:
     async def stream_sub(self, callback: Optional[Callable[[Stream], Awaitable[None]]]):
         async with self.client.stream_sub(callback) as sub:
             yield sub
+
 
 def get_acqtime_now() -> Timestamp:
     """Creates a custom Timestamp message using the system monotonic clock."""
