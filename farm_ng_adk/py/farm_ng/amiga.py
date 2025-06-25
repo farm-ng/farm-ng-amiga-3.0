@@ -99,7 +99,7 @@ class Amiga:
         Args:
             h_axis (float): Horizontal axis input (-1.0 to 1.0), controls angular velocity.
             v_axis (float): Vertical axis input (-1.0 to 1.0), controls linear velocity.
-            dead_man_switch (bool): If False, robot will ignore the command.
+            dead_man_switch (bool): If False, **robot will hold onto last command sent/not automatically stop if connection is severed**.
 
         Example:
             ```python
@@ -303,7 +303,7 @@ class Amiga:
         """Sends a request to repeat a specific route.
 
         Args:
-            path (str): The path to the route to be repeated.
+            path (str): The path to the route to be repeated on the Amiga.
         """
 
         request = Request(
@@ -318,7 +318,8 @@ class Amiga:
 
     async def repeat_route_from_lon_lats(self, json_path: str):
         """
-        Sends a request to repeat a route stored as a list of longitude and latitude coordinates.
+        Sends a request to repeat a route stored as a list of longitude and latitude coordinates. To be used with tracks
+        recorded with the Map Recorder App. File must be local to the machine running the code.
 
         Args:
             json_path (str): The path to the JSON file containing the route data.
