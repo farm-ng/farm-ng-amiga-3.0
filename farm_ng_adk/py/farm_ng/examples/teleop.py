@@ -12,8 +12,8 @@ VELOCITY_INCREMENT = 0.1
 class Teleop:
     def __init__(self, amiga: Amiga):
         self.amiga = amiga
-        self.v_axis: float = 0.0  # Initialize values
-        self.h_axis: float = 0.0  # Initialize values
+        self.v_axis: float = 0.0
+        self.h_axis: float = 0.0
         self.lock = asyncio.Lock()
         self.running = True
         self.task: asyncio.Task = asyncio.create_task(self.run())
@@ -30,16 +30,17 @@ class Teleop:
             self.v_axis = v_axis
 
     async def run(self):
+        v, h = 0.0, 0.0
         while self.running:
             async with self.lock:
                 v = self.v_axis
                 h = self.h_axis
             if v != 0.0 or h != 0.0:
                 await self.amiga.teleop_command(h_axis=h, v_axis=v)
-            await asyncio.sleep(0.1)  # Fixed: was missing await
+            await asyncio.sleep(0.1)
 
     async def shutdown(self):
-        self.running = False  # Stop the run loop
+        self.running = False
         await self.deactivate()
         self.task.cancel()
         try:
@@ -68,7 +69,7 @@ async def main(address: str):
     teleop_handler = Teleop(amiga)
 
     try:
-        input("Press Enter to activate teleop...")
+        await asyncio.to_thread(input, "Press Enter to activate teleop...")
         await teleop_handler.activate()
         logging.info("Teleop activated. Use WASD to drive. Type 'exit' to stop.")
 
@@ -76,8 +77,10 @@ async def main(address: str):
         update_interval = 0.1  # 100 ms
 
         while True:
-            print("Command (w/a/s/d to adjust, 'stop' to zero, 'exit' to quit): ")
-            key = input().strip()
+            key = await asyncio.to_thread(
+                input, "Command (w/a/s/d to adjust, 'stop' to zero, 'exit' to quit): "
+            )
+            key = key.strip()
 
             if key == "exit":
                 break
@@ -96,9 +99,7 @@ async def main(address: str):
                 await teleop_handler.update_command(h_axis=current_h, v_axis=current_v)
                 await asyncio.sleep(update_interval)
 
-        # Send stop command before deactivating
-        await teleop_handler.update_command(h_axis=0.0, v_axis=0.0)
-        await asyncio.sleep(0.1)  # Give time for the stop command to be sent
+            await asyncio.sleep(0.1)
 
         logging.info("Teleop deactivated.")
 
