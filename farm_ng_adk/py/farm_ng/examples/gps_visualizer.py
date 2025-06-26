@@ -23,11 +23,12 @@ async def feedback_callback(feedback: apb.Feedback) -> None:
                     )
                 except Exception as e:
                     logging.error(f"Error processing position: {e}")
-                    
+
+
 async def feedback_task(amiga: Amiga):
     async with amiga.feedback_sub(feedback_callback):
         logging.info("Listening to feedback...")
-        
+
         while True:
             try:
                 await asyncio.sleep(1)  # Keep the task alive
@@ -37,12 +38,15 @@ async def feedback_task(amiga: Amiga):
 
 
 async def main(address: str):
+    """Opens a feedback task that listens to the Global Pose Message. Prints in the terminal
+    the current position of the Amiga in latitude and longitude.
+    """
     logging.info(f"Connecting to Amiga at {address}")
     amiga = Amiga(address=address)
-    
+
     try:
         feedback_task_instance = asyncio.create_task(feedback_task(amiga))
-        
+
         try:
             await feedback_task_instance
         except asyncio.CancelledError:
