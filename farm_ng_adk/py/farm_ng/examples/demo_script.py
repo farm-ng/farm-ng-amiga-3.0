@@ -21,7 +21,6 @@ async def main(address: str):
                 try:
                     mode = nav.mode
                     if mode == apb.NavigationMode.NAVIGATION_MODE_IDLE:
-                        await asyncio.sleep(5) # simulate some processing time
                         stop_event.set()
                 except Exception as e:
                     logging.error(f"Error processing navigation mode: {e}")
@@ -34,9 +33,11 @@ async def main(address: str):
                 except asyncio.CancelledError:
                     logging.info("Feedback task cancelled.")
                     break
-            # grab timestamp, we've finished segment
-            # do stuff
-            return timestamps
+            # segment finished:
+            # > Get Timestamp
+            # > Record 0.5 second log; RGB data from Oak1
+            # > Engage implement for 2 seconds
+            # > Disengage implement for 2 seconds
                 
     try:
         while True:
