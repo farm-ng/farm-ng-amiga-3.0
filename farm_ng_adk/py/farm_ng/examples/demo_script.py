@@ -25,12 +25,13 @@ async def main(address: str):
         
         await amiga.deactivate_tool(0, "hbridge")
         
-        name = path.split("/")[-1]
+        name = route_name.split("/")[-1].split(".")[0]
         
         await amiga.start_recording(
             id=name,
             topics=[
                "hal_cam_left_color",
+               "hal_cam_right_color",
             ]
         )
         
