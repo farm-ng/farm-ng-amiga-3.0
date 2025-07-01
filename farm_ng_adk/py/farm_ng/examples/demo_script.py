@@ -9,61 +9,61 @@ async def main(address: str):
     logging.info(f"Connecting to Amiga at {address}")
     amiga = Amiga(address=address)
     
-    timestamps = {}
-                    
-                
-    async def end_route_callback():
+    async def post_job_tasks() -> None:
+        # segment finished:
+        # > Get Timestamp
+        # > Record 0.5 second log; RGB data from Oak1
+        # > Engage implement for 2 seconds
+        await amiga.activate_tool(0, "hbridge", -2)
+        
+        await asyncio.sleep(2)
+        
+        # > Disengage implement for 2 seconds
+        await amiga.activate_tool(0, "hbridge", 2)
+        
+        await asyncio.sleep(3)
+        
+    async def wait_for_mode(mode: apb.NavigationMode) -> None:
         stop_event = asyncio.Event()
-        
+
         async def feedback_callback(feedback: apb.Feedback) -> None:
-            if feedback.HasField("navigation"):
-                nav = feedback.navigation
-                try:
-                    mode = nav.mode
-                    if mode == apb.NavigationMode.NAVIGATION_MODE_IDLE:
-                        stop_event.set()
-                except Exception as e:
-                    logging.error(f"Error processing navigation mode: {e}")
-                    return
-        
+            if feedback.HasField("navigation") and feedback.navigation.mode == mode:
+                stop_event.set()
+
         async with amiga.feedback_sub(feedback_callback):
-            while not stop_event.is_set():
-                try:
-                    await asyncio.sleep(1)  # Keep the task alive
-                except asyncio.CancelledError:
-                    logging.info("Feedback task cancelled.")
-                    break
-            # segment finished:
-            # > Get Timestamp
-            # > Record 0.5 second log; RGB data from Oak1
-            # > Engage implement for 2 seconds
-            # > Disengage implement for 2 seconds
+            await stop_event.wait()
+            
+    async def run_track(path: str) -> None:
+        print(f"Waiting to be IDLE before starting {path}")
+        await wait_for_mode(apb.NavigationMode.NAVIGATION_MODE_IDLE)
+
+        print(f"Sending route: {path}")
+        await amiga.repeat_route_from_lon_lats(path)
+
+        print(f"Waiting to detect REPEAT_ROUTE for {path}")
+        await wait_for_mode(apb.NavigationMode.NAVIGATION_MODE_REPEAT_ROUTE)
+
+        print(f"Waiting to detect IDLE after {path}")
+        await wait_for_mode(apb.NavigationMode.NAVIGATION_MODE_IDLE)
+
+        print(f"Running post-job task for {path}")
+        await post_job_tasks()
                 
     try:
+        print("Starting route repetition...")
         while True:
-            end_route_task = asyncio.create_task(end_route_callback())
-            await amiga.repeat_route_from_lon_lats("/mnt/data/tracks/track1.json")
-            await end_route_task
+            for path in [
+                "/home/rusty/projects/tracks/orica1.json",
+                "/home/rusty/projects/tracks/orica2.json",
+                "/home/rusty/projects/tracks/orica3.json",
+                "/home/rusty/projects/tracks/orica4.json",
+                "/home/rusty/projects/tracks/orica5.json",
+                "/home/rusty/projects/tracks/orica6.json",
+                "/home/rusty/projects/tracks/orica7.json",
+                "/home/rusty/projects/tracks/orica8.json"
+            ]:
+               await run_track(path)
             
-            end_route_task = asyncio.create_task(end_route_callback())
-            await amiga.repeat_route_from_lon_lats("/mnt/data/tracks/track2.json")
-            await end_route_task
-            
-            end_route_task = asyncio.create_task(end_route_callback())
-            await amiga.repeat_route_from_lon_lats("/mnt/data/tracks/track3.json")
-            await end_route_task
-            
-            end_route_task = asyncio.create_task(end_route_callback())
-            await amiga.repeat_route_from_lon_lats("/mnt/data/tracks/track4.json")
-            await end_route_task
-            
-            end_route_task = asyncio.create_task(end_route_callback())
-            await amiga.repeat_route_from_lon_lats("/mnt/data/tracks/track5.json")
-            await end_route_task
-            
-            end_route_task = asyncio.create_task(end_route_callback())
-            await amiga.repeat_route_from_lon_lats("/mnt/data/tracks/track6.json")
-            await end_route_task
         
     except Exception as e:
         logging.error(f"An error occurred: {e}")
