@@ -9,19 +9,38 @@ async def main(address: str):
     logging.info(f"Connecting to Amiga at {address}")
     amiga = Amiga(address=address)
     
-    async def post_job_tasks() -> None:
+    async def post_job_tasks(route_name: str) -> None:
         # segment finished:
         # > Get Timestamp
         # > Record 0.5 second log; RGB data from Oak1
         # > Engage implement for 2 seconds
         await amiga.activate_tool(0, "hbridge", -2)
         
-        await asyncio.sleep(2)
+        await asyncio.sleep(3)
         
         # > Disengage implement for 2 seconds
         await amiga.activate_tool(0, "hbridge", 2)
         
         await asyncio.sleep(3)
+        
+        await amiga.deactivate_tool(0, "hbridge")
+        
+        name = path.split("/")[-1]
+        
+        await amiga.start_recording(
+            id=name,
+            topics=[
+               "hal_cam_left_color",
+            ]
+        )
+        
+        await asyncio.sleep(2)
+        
+        await amiga.stop_recording(
+            id=name,
+        )
+        
+        
         
     async def wait_for_mode(mode: apb.NavigationMode) -> None:
         stop_event = asyncio.Event()
@@ -47,7 +66,7 @@ async def main(address: str):
         await wait_for_mode(apb.NavigationMode.NAVIGATION_MODE_IDLE)
 
         print(f"Running post-job task for {path}")
-        await post_job_tasks()
+        await post_job_tasks(path)
                 
     try:
         print("Starting route repetition...")
