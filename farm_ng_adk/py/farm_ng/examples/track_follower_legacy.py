@@ -69,3 +69,8 @@ if __name__ == "__main__":
         required=True,
         help="Path to the track to be repeated; This example uses tracks recorded by the Map Recorder application. Path must be local to the machine running the example.",
     )
+    
+    args = parser.parse_args()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run(args))
