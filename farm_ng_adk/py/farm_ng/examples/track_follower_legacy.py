@@ -2,7 +2,8 @@ import argparse
 import asyncio
 import logging
 
-from farm_ng import Amiga, TrackFollowerClient, nexus as apb
+from farm_ng import Amiga, nexus as apb
+from farm_ng.track_follower_client import TrackFollowerClient
 
 async def stream_track_state(amiga: Amiga):
     async def feedback_callback(feedback: apb.Feedback) -> None:

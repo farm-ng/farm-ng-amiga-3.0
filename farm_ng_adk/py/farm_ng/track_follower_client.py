@@ -1,4 +1,4 @@
-from amiga import Amiga
+from farm_ng.amiga import Amiga
 from typing import Optional
 
 class TrackFollowerClient:
