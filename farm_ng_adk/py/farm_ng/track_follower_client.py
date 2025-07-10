@@ -2,6 +2,11 @@ from farm_ng.amiga import Amiga
 from typing import Optional
 
 class TrackFollowerClient:
+    """A client for following a track on the Amiga robot.
+
+    Args:
+        amiga (Amiga): An instance of the Amiga class to interact with the robot.
+    """
     def __init__(self, amiga: Amiga):
         self._amiga = amiga
         self._track: Optional[str]  = None

@@ -6,6 +6,9 @@ from farm_ng import Amiga, nexus as apb
 from farm_ng.track_follower_client import TrackFollowerClient
 
 async def stream_track_state(amiga: Amiga):
+    """
+    Stream the track follower state
+    """
     async def feedback_callback(feedback: apb.Feedback) -> None:
         if feedback.HasField("navigation"):
             print(f"Track state: {feedback.navigation.mode}")
@@ -21,16 +24,37 @@ async def stream_track_state(amiga: Amiga):
                 break
             
 def set_track(track_follower: TrackFollowerClient, track_path: str):
+    """Set the track of the track follower client
+
+    Args:
+        track_follower (TrackFollowerClient): The track follower client instance.
+        track_path (str): Path to the track to be repeated;
+    """
     print(f"Setting track:\n {track_path}")
     track_follower.set_track(track_path)
     
           
 async def start(track_follower: TrackFollowerClient):
+    """
+    Follow the track
+    
+    Args:
+        track_follower (TrackFollowerClient): The track follower client instance.
+    """
     print("Sending request to start following the track...")
     await track_follower.follow_track()
     
     
 async def main(track_follower: TrackFollowerClient, track_path: str):
+    """
+    Run the track follower exmaple. Robot will drive the pre-recorded track.
+    
+    Args:
+        track_follower (TrackFollowerClient): The track follower client instance.
+        track_path (str): Path to the track to be repeated; Expected to be a local path
+        to the machine running the example, and a JSON of lat/lon waypoints created by the
+        Map Recorder application.
+    """
     try:
         set_track(track_follower, track_path)
         await start(track_follower)
