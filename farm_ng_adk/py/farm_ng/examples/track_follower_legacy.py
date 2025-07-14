@@ -52,6 +52,18 @@ async def start(track_follower: TrackFollowerClient):
     print("Sending request to start following the track...")
     await track_follower.follow_track()
     
+async def stop(address: str):
+    track_follower = TrackFollowerClient(Amiga(address=address))
+    
+    """
+    Stop following the track
+    
+    Args:
+        track_follower (TrackFollowerClient): The track follower client instance.
+    """
+    print("Sending request to stop following the track...")
+    await track_follower.stop_following()
+    
     
 async def main(track_follower: TrackFollowerClient, track_path: str):
     """
@@ -79,9 +91,6 @@ async def run(args) -> None:
         asyncio.create_task(stream_track_state(amiga)),
     ]
     await asyncio.gather(*tasks)
-    
-    await track_follower.stop_following()
-    logging.info("Track following stopped successfully.")
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -109,4 +118,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(run(args))
+    try:
+        loop.run_until_complete(run(args))
+    except KeyboardInterrupt:
+        logging.info("Track follower example interrupted by user.")
+    finally:
+        loop.run_until_complete(stop(args.address))
