@@ -5,13 +5,21 @@ import logging
 from farm_ng import Amiga, nexus as apb
 from farm_ng.track_follower_client import TrackFollowerClient
 
+def mapProtoToString(mode: apb.NavigationMode) -> str:
+    if mode == apb.NavigationMode.NAVIGATION_MODE_IDLE:
+        return "Idle"
+    elif mode == apb.NavigationMode.NAVIGATION_MODE_REPEAT_ROUTE:
+        return "Repeat Route"
+    else:
+        return f"Unknown Mode {mode}"
+
 async def stream_track_state(amiga: Amiga):
     """
     Stream the track follower state
     """
     async def feedback_callback(feedback: apb.Feedback) -> None:
         if feedback.HasField("navigation"):
-            print(f"Track state: {feedback.navigation.mode}")
+            print(f"Track state: {mapProtoToString(feedback.navigation.mode)}")
             
     async with amiga.feedback_sub(feedback_callback):
         logging.info("Streaming track state...")
@@ -71,6 +79,9 @@ async def run(args) -> None:
         asyncio.create_task(stream_track_state(amiga)),
     ]
     await asyncio.gather(*tasks)
+    
+    await track_follower.stop_following()
+    logging.info("Track following stopped successfully.")
 
 if __name__ == "__main__":
     logging.basicConfig(
