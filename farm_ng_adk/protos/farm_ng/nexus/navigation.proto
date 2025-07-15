@@ -85,6 +85,7 @@ message LineFigure {
 message CircleFigure {
   double radius = 1;
   DirectionKind direction = 2;
+  optional double arc_angle = 3;
 }
 
 message EightFigure {
