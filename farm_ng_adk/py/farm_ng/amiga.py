@@ -24,6 +24,8 @@ from farm_ng.nexus import (
     TeleopCommandRequest,
     NavigationRequest,
     StopRequest,
+    FollowFigureRequest, 
+    CircleFigure,
     TurnAroundRequest,
     TurnAroundManeuverKind,
     TurnAroundReferenceFrame,
@@ -297,6 +299,36 @@ class Amiga:
             )
         )
 
+        await self.client.request(request)
+
+    async def circle_track(self, radius: float, arc_angle: float, direction: str):
+        """
+        Sends a request to drive a circular track with specified parameters.
+        Args:
+            radius (float): The radius of the circular track.
+            arc_angle (float): The angle of the arc in radians.
+            direction (str): The direction to drive the circular track. Options are "left" or "right".
+        Example:
+            ```python
+            await nexus.circle_track(1.0, 2.0 * 3.14159, "left")
+            ```
+        """
+        if direction not in ["left", "right"]:
+            raise ValueError("Direction must be 'left' or 'right'.")
+        
+        request = Request(
+            navigation=NavigationRequest(
+                follow_figure=FollowFigureRequest(
+                    pose_count=20,
+                    circle=CircleFigure(
+                        radius=radius,
+                        direction=DirectionKind.DIRECTION_KIND_COUNTER_CLOCKWISE if direction == "left" else DirectionKind.DIRECTION_KIND_CLOCKWISE,
+                        arc_angle=arc_angle
+                    )
+                )
+            )
+        )
+        
         await self.client.request(request)
 
     async def repeat_route(self, path: str):
