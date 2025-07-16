@@ -24,7 +24,7 @@ from farm_ng.nexus import (
     TeleopCommandRequest,
     NavigationRequest,
     StopRequest,
-    FollowFigureRequest, 
+    FollowFigureRequest,
     CircleFigure,
     TurnAroundRequest,
     TurnAroundManeuverKind,
@@ -39,6 +39,7 @@ from farm_ng.nexus import (
     PolarToolState,
     PolarToolStateKind,
     RotaryToolState,
+    RepeatedLonLat,
 )
 
 
@@ -315,20 +316,24 @@ class Amiga:
         """
         if direction not in ["left", "right"]:
             raise ValueError("Direction must be 'left' or 'right'.")
-        
+
         request = Request(
             navigation=NavigationRequest(
                 follow_figure=FollowFigureRequest(
                     pose_count=20,
                     circle=CircleFigure(
                         radius=radius,
-                        direction=DirectionKind.DIRECTION_KIND_COUNTER_CLOCKWISE if direction == "left" else DirectionKind.DIRECTION_KIND_CLOCKWISE,
-                        arc_angle=arc_angle
-                    )
+                        direction=(
+                            DirectionKind.DIRECTION_KIND_COUNTER_CLOCKWISE
+                            if direction == "left"
+                            else DirectionKind.DIRECTION_KIND_CLOCKWISE
+                        ),
+                        arc_angle=arc_angle,
+                    ),
                 )
             )
         )
-        
+
         await self.client.request(request)
 
     async def repeat_route(self, path: str):
@@ -368,6 +373,28 @@ class Amiga:
             navigation=NavigationRequest(
                 follow_route=FollowRouteRequest(
                     lon_lat_route=track,
+                )
+            )
+        )
+
+        await self.client.request(request)
+
+    async def repeat_route_from_proto(self, route: RepeatedLonLat):
+        """
+        Sends a request to repeat a route stored as a RepeatedLonLat proto message.
+
+        Args:
+            route (RepeatedLonLat): The RepeatedLonLat proto message containing the route data.
+
+        Example:
+            ```python
+            await nexus.repeat_route_from_proto(route)
+            ```
+        """
+        request = Request(
+            navigation=NavigationRequest(
+                follow_route=FollowRouteRequest(
+                    lon_lat_route=route,
                 )
             )
         )
