@@ -1,48 +1,53 @@
 import argparse
 import asyncio
 import logging
-import time
+import subprocess
 
 from farm_ng import Amiga, nexus as apb
 
-async def main(address: str):
+
+async def run_remote_snapshot_script(user: str, host: str, remote_script: str) -> None:
+    ssh_command = [
+        "ssh",
+        f"{user}@{host}",
+        f"bash -c 'source ~/venv/bin/activate && python3 {remote_script}'",
+    ]
+
+    try:
+        result = subprocess.run(ssh_command, check=True)
+        print("Remote script finished successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Remote script failed with exit code {e.returncode}")
+
+
+async def main(address: str, user: str) -> None:
     logging.info(f"Connecting to Amiga at {address}")
     amiga = Amiga(address=address)
-    
+
     async def post_job_tasks(route_name: str) -> None:
         # segment finished:
         # > Get Timestamp
         # > Record 0.5 second log; RGB data from Oak1
         # > Engage implement for 2 seconds
         await amiga.activate_tool(0, "hbridge", -2)
-        
+
         await asyncio.sleep(3)
-        
+
         # > Disengage implement for 2 seconds
         await amiga.activate_tool(0, "hbridge", 2)
-        
+
         await asyncio.sleep(3)
-        
+
         await amiga.deactivate_tool(0, "hbridge")
-        
-        name = route_name.split("/")[-1].split(".")[0]
-        
-        await amiga.start_recording(
-            id=name,
-            topics=[
-               "hal_cam_left_color",
-               "hal_cam_right_color",
-            ]
+
+        # name = route_name.split("/")[-1].split(".")[0]
+
+        await run_remote_snapshot_script(
+            user=f"farm-ng-user-{user}",
+            host=address,
+            remote_script=f"/mnt/managed_home/farm-ng-user-{user}/oak_snapshot.py",
         )
-        
-        await asyncio.sleep(2)
-        
-        await amiga.stop_recording(
-            id=name,
-        )
-        
-        
-        
+
     async def wait_for_mode(mode: apb.NavigationMode) -> None:
         stop_event = asyncio.Event()
 
@@ -52,7 +57,7 @@ async def main(address: str):
 
         async with amiga.feedback_sub(feedback_callback):
             await stop_event.wait()
-            
+
     async def run_track(path: str) -> None:
         print(f"Waiting to be IDLE before starting {path}")
         await wait_for_mode(apb.NavigationMode.NAVIGATION_MODE_IDLE)
@@ -68,7 +73,7 @@ async def main(address: str):
 
         print(f"Running post-job task for {path}")
         await post_job_tasks(path)
-                
+
     try:
         print("Starting route repetition...")
         while True:
@@ -80,30 +85,35 @@ async def main(address: str):
                 "/home/rusty/projects/tracks/orica5.json",
                 "/home/rusty/projects/tracks/orica6.json",
                 "/home/rusty/projects/tracks/orica7.json",
-                "/home/rusty/projects/tracks/orica8.json"
+                "/home/rusty/projects/tracks/orica8.json",
             ]:
-               await run_track(path)
-            
-        
+                await run_track(path)
+
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-    
+
+
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
     parser = argparse.ArgumentParser(
         description="Connect to Amiga and stream camera data"
     )
-    
+
     parser.add_argument(
         "--address",
         type=str,
         default="127.0.0.1",
-        help="IP address or hostname of the Amiga robot"
+        help="IP address or hostname of the Amiga robot",
+    )
+
+    parser.add_argument(
+        "--user",
+        type=str,
+        help="Username for SSH connection to the remote host",
     )
 
     args = parser.parse_args()
-    asyncio.run(main(args.address))
+    asyncio.run(main(args.address, args.user))
