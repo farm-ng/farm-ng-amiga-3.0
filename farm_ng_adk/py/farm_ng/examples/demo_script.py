@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import subprocess
+from pathlib import Path
 
 from farm_ng import Amiga, nexus as apb
 
@@ -20,9 +21,12 @@ async def run_remote_snapshot_script(user: str, host: str, remote_script: str) -
         print(f"Remote script failed with exit code {e.returncode}")
 
 
-async def main(address: str, user: str) -> None:
+async def main(address: str, user: str, track_dir: str) -> None:
     logging.info(f"Connecting to Amiga at {address}")
     amiga = Amiga(address=address)
+
+    track_dir = Path(args.track_dir)
+    track_paths = sorted(track_dir.glob("*.json"))
 
     async def post_job_tasks(route_name: str) -> None:
         # segment finished:
@@ -33,20 +37,19 @@ async def main(address: str, user: str) -> None:
 
         await asyncio.sleep(3)
 
+        # Take a snapshot
+        await run_remote_snapshot_script(
+            user=f"farm-ng-user-{user}",
+            host=address,
+            remote_script=f"/mnt/managed_home/farm-ng-user-{user}/oak_snapshot.py",
+        )
+
         # > Disengage implement for 2 seconds
         await amiga.activate_tool(0, "hbridge", 2)
 
         await asyncio.sleep(3)
 
         await amiga.deactivate_tool(0, "hbridge")
-
-        # name = route_name.split("/")[-1].split(".")[0]
-
-        await run_remote_snapshot_script(
-            user=f"farm-ng-user-{user}",
-            host=address,
-            remote_script=f"/mnt/managed_home/farm-ng-user-{user}/oak_snapshot.py",
-        )
 
     async def wait_for_mode(mode: apb.NavigationMode) -> None:
         stop_event = asyncio.Event()
@@ -77,17 +80,8 @@ async def main(address: str, user: str) -> None:
     try:
         print("Starting route repetition...")
         while True:
-            for path in [
-                "/home/rusty/projects/tracks/orica1.json",
-                "/home/rusty/projects/tracks/orica2.json",
-                "/home/rusty/projects/tracks/orica3.json",
-                "/home/rusty/projects/tracks/orica4.json",
-                "/home/rusty/projects/tracks/orica5.json",
-                "/home/rusty/projects/tracks/orica6.json",
-                "/home/rusty/projects/tracks/orica7.json",
-                "/home/rusty/projects/tracks/orica8.json",
-            ]:
-                await run_track(path)
+            for path in track_paths:
+                await run_track(str(path))
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
@@ -115,5 +109,11 @@ if __name__ == "__main__":
         help="Username for SSH connection to the remote host",
     )
 
+    parser.add_argument(
+        "--track_dir",
+        type=str,
+        help="Directory containing the track files",
+    )
+
     args = parser.parse_args()
-    asyncio.run(main(args.address, args.user))
+    asyncio.run(main(args.address, args.user, args.track_dir))
